@@ -1,0 +1,446 @@
+# [PackageDev] target_format: plist, ext: tmLanguage
+---
+name: IdrisST
+scopeName: source.idris
+fileTypes: [idr]
+uuid: 3ee967d8-23f5-4e5b-8d6a-1008d9e2b0f0
+
+patterns:
+  - include: '#comment'
+  - name: meta.pragma.idris
+    match: ^(%\w+)\b.*
+    captures:
+        '1': {name: keyword.other.idris}
+  - name: meta.module.idris
+    match: ^(module)\s+(.*);?$
+    captures:
+        '1': {name: keyword.module.idris}
+        '2': {name: support.module.idris}
+  - name: meta.import.idris
+    match: ^(import)\s+(.*);?$
+    captures:
+        '1': {name: keyword.import.idris}
+        '2': {name: support.import.idris}
+  - name: meta.fixity.idris
+    match: ^(infix[lr]?)\s+(\d+)\s+(.*);?$
+    captures:
+        '1': {name: keyword.import.idris}
+        '2': {name: constant.numeric.idris}
+        '3': {name: support.function.idris}
+  - include: '#declaration'
+
+repository:
+    comment:
+        patterns:
+          - name: comment.line.idris
+            match: --.*$
+          - name: comment.doc.line.idris
+            match: \|\|\|.*$
+          - include: '#multilineComment'
+
+    multilineComment:
+        patterns:
+          - name: comment.multiline.idris
+            begin: '{-'
+            patterns:
+              - include: '#multilineComment'
+            end: '-}'
+
+    declaration:
+        patterns:
+          - include: '#dataDeclaration'
+          - include: '#classDeclaration'
+          - include: '#usingDeclaration'
+          - include: '#functionSignature'
+          - include: '#termExpr'
+
+    usingDeclaration:
+        patterns:
+          - name: meta.using.idris
+            begin: \b(using)\s*\(
+            beginCaptures:
+                '1': {name: keyword.using.idris}
+            patterns:
+              - match: ','
+              - include: '#typeAscription'
+            end: \)
+
+    dataDeclaration:
+        patterns:
+          - name: declaration.data.idris
+            begin: \b((?:co)?data|record)\s+
+            beginCaptures:
+                '1': {name: keyword.data.idris}
+            patterns:
+              - include: '#functionSignature'
+              # FIXME capture constructors for simple data declarations as entity.name.function.idris
+              - name: meta.simpleDataDeclaration.idris
+                begin: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?=.*=)
+                beginCaptures:
+                    '1': {name: entity.name.type.idris}
+                patterns:
+                  - name: variable.type.idris
+                    match: |
+                        (?x)
+                        (
+                            (?:
+                                \([-:!#$%&*+./<=>?@\\^|~]+\)
+                              | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                                |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                                |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                            ) # identifierPattern
+                        )
+                end: '(?==)'
+            end: (?==|\bwhere\b)
+            endCaptures:
+                '1': {name: keyword.other.idris}
+
+    classDeclaration:
+        patterns:
+          - name: declaration.class.idris
+            begin: \b(class)\b
+            beginCaptures:
+                '1': {name: keyword.class.idris}
+            patterns:
+              - name: keyword.arrow.context.idris
+                match: '=>'
+              - name: meta.complexContextBound.idris
+                begin: '\('
+                patterns:
+                  - match: ','
+                  - include: '#typeExpr'
+                end: \)\s+(=>)\s+
+                endCaptures:
+                    '1': {name: keyword.arrow.context.idris}
+              - name: meta.simpleContextBound.idris
+                match: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?=.*=>)
+                captures:
+                    '1': {name: support.class.idris}
+              - name: meta.class.idris
+                begin: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?!.*=>)
+                beginCaptures:
+                    '1': {name: entity.name.type.idris}
+                patterns:
+                  - include: '#typeExpr'
+                end: (?=\bwhere\b)
+            end: \b(where)\b
+            endCaptures:
+                '1': {name: keyword.where.idris}
+          - name: declaration.instance.idris
+            begin: \b(instance)\b
+            beginCaptures:
+                '1': {name: keyword.instance.idris}
+            patterns:
+              - name: keyword.arrow.context.idris
+                match: '=>'
+              - name: meta.complexContextBound.idris
+                begin: '\('
+                patterns:
+                  - match: ','
+                  - include: '#typeExpr'
+                end: \)\s+(=>)\s+
+                endCaptures:
+                    '1': {name: keyword.arrow.context.idris}
+              - name: meta.simpleContextBound.idris
+                match: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?=.*=>)
+                captures:
+                    '1': {name: support.class.idris}
+              - name: meta.class.idris
+                begin: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!let|in|data|codata|record|Type|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?!.*=>)
+                beginCaptures:
+                    '1': {name: support.class.idris}
+                patterns:
+                  - include: '#typeExpr'
+                end: (?=\bwhere\b)
+            end: \b(where)\b
+            endCaptures:
+                '1': {name: keyword.where.idris}
+
+    functionSignature:
+        patterns:
+          - name: meta.functionSignature.idris
+            begin: |
+                (?x)
+                (
+                    (?:
+                        \([-:!#$%&*+./<=>?@\\^|~]+\)
+                      | \b(?!(?:let|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                        |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                        |abstract|implicit|quoteGoal)\b)[a-zA-Z][a-zA-Z0-9_'.]*
+                    ) # identifierPattern
+                )
+                \s*:\s*
+            beginCaptures:
+                '1': {name: entity.name.function.idris}
+            patterns:
+              - name: meta.implicitParameters.idris
+                begin: '{'
+                patterns:
+                  - include: '#typeExpr'
+                end: '}'
+              - name: meta.classContext.idris
+                match: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!(?:let|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                            |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                            |abstract|implicit|quoteGoal)\b)[a-zA-Z][a-zA-Z0-9_'.]*
+                        ) # identifierPattern
+                    )
+                    (?:
+                        \s+
+                        (
+                            (?:
+                                \([-:!#$%&*+./<=>?@\\^|~]+\)
+                              | \b(?!(?:let|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                                |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                                |abstract|implicit|quoteGoal)\b)[a-zA-Z][a-zA-Z0-9_'.]*
+                            ) # identifierPattern
+                        )+
+                    )*
+                    \s*(=>)\s*
+                captures:
+                    '1': {name: support.class.idris}
+                    '2': {name: variable.type.idris}
+                    '3': {name: keyword.contextarrow.idris}
+              - include: '#typeExpr'
+            end: |
+                (?x)
+                (?=$|\)|=|\bwhere\b) # stopExprPattern
+            endCaptures:
+                '1': {name: keyword.where.idris}
+
+    typeAscription:
+        patterns:
+          - name: meta.typeAscription.idris
+            begin: |
+                (?x)
+                (
+                    (?:
+                        \([-:!#$%&*+./<=>?@\\^|~]+\)
+                      | \b(?!(?:let|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                        |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                        |abstract|implicit|quoteGoal)\b)[a-zA-Z][a-zA-Z0-9_'.]*
+                    ) # identifierPattern
+                )
+                \s*:\s*
+            beginCaptures:
+                '1': {name: variable.other.idris}
+            patterns:
+              - include: '#typeExpr'
+            end: |
+                (?x)
+                (?=^\S|\)|\bwhere\b) # stopExprPattern
+            endCaptures:
+                '1': {name: keyword.where.idris}
+
+    typeExpr:
+        patterns:
+          - name: support.type.idris
+            match: |
+                (?x)
+                (?:
+                    \([-:!#$%&*+./<=>?@\\^|~]+\)
+                )
+          - name: variable.type.idris
+            match: |
+                (?x)
+                (?:
+                    \([-:!#$%&*+./<=>?@\\^|~]+\)
+                  | \b(?!l(?:et|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                     |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                     |abstract|implicit|quoteGoal)\b)[a-z][a-zA-Z0-9_'.]*
+                ) # identifierPatternLower
+          - name: constant.other.color.idris
+            match: \(\)
+          - begin: \(
+            patterns:
+              - include: '#typeAscription'
+              - include: '#typeExpr'
+            end: \)
+          - include: '#otherExpr'
+
+    termExpr:
+        patterns:
+          - name: constant.other.color.idris
+            match: \(\)
+          - begin: \(
+            patterns:
+              - include: '#typeAscription'
+              - include: '#termExpr'
+            end: \)
+          - name: meta.implicitParameters.idris
+            begin: '{'
+            patterns:
+              - name: meta.implicitParameterName.idris
+                begin: |
+                    (?x)
+                    (
+                        (?:
+                            \([-:!#$%&*+./<=>?@\\^|~]+\)
+                          | \b(?!l(?:et|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                             |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                             |abstract|implicit|quoteGoal)\b)[a-z][a-zA-Z0-9_'.]*
+                        ) # identifierPatternLower
+                    )
+                beginCaptures:
+                    '1': {name: support.type.idris}
+                patterns:
+                  - begin: '='
+                    patterns:
+                      - include: '#typeExpr'
+                    end: '(?=})'
+                end: '(?=})'
+              - include: '#termExpr'
+            end: '}'
+          - include: '#otherExpr'
+
+    otherExpr:
+        patterns:
+          - name: meta.proofBrackets.idris
+            begin: '={'
+            patterns:
+              - include: '#termExpr'
+            end: '}='
+          - name: constant.numeric.nat.idris
+            match: \b(?:f?Z|f?S)\b
+          - name: constant.numeric.idris
+            match: \b([0-9]+|0([xX][0-9a-fA-F]+|[oO][0-7]+))\b
+          - name: constant.numeric.float.idris
+            match: \b([0-9]+\.[0-9]+([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+)\b
+          - name: constant.other.color.idris
+            match: \[\]
+          - name: string.quoted.double.idris
+            begin: '"'
+            beginCaptures:
+                '0': {name: punctuation.definition.string.begin.idris}
+            patterns:
+              - name: constant.character.escape.gap.idris
+                match: \\\s+$
+              - name: constant.character.escape.empty.idris
+                match: \\&
+              - name: constant.character.escape.code.symbolic.idris
+                match: |
+                    (?x)
+                    \\
+                    (NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC1|DC2|DC3|DC4|NAK|SYN|ETB|CAN|EM|SUB
+                    |ESC|FS|GS|RS|US|SP|DEL|[abfnrtv\\\"'\&])
+              - name: constant.character.escape.octal.idris
+                match: '\\o[0-7]+|\\x[0-9A-Fa-f]+|\\[0-9]+'
+            end: '$|"'
+            endCaptures:
+                '0': {name: punctuation.definition.string.begin.idris}
+          - name: string.quoted.single.idris
+            begin: ''''
+            beginCaptures:
+                '0': {name: punctuation.definition.string.begin.idris}
+            patterns:
+              - name: constant.character.escape.gap.idris
+                match: \\\s+$
+              - name: constant.character.escape.empty.idris
+                match: \\&
+              - name: constant.character.escape.code.symbolic.idris
+                match: |
+                    (?x)
+                    \\
+                    (NUL|SOH|STX|ETX|EOT|ENQ|ACK|BEL|BS|HT|LF|VT|FF|CR|SO|SI|DLE|DC1|DC2|DC3|DC4|NAK|SYN|ETB|CAN|EM|SUB
+                    |ESC|FS|GS|RS|US|SP|DEL|[abfnrtv\\\"'\&])
+              - name: constant.character.escape.octal.idris
+                match: '\\o[0-7]+|\\x[0-9A-Fa-f]+|\\[0-9]+'
+            end: '$|'''
+            endCaptures:
+                '0': {name: punctuation.definition.string.begin.idris}
+          - name: keyword.operator.bind.idris
+            match: <-
+          - name: keyword.other.idris
+            match: \b(?:where|public|total|partial|abstract|public|private|mutual|impossible|if|then|else|do)\b
+          - name: keyword.bottom.idris
+            match: '_\|_'
+          - name: keyword.arrow.function.idris
+            match: '->'
+          - begin: \\
+            beginCaptures:
+                '0': {name: keyword.lambda.idris}
+            patterns:
+              - name: keyword.arrow.function.idris
+                match: =>
+              - include: '#termExpr'
+            end: |
+                (?x)
+                (?=^\S|\)|\bwhere\b) # stopExprPattern
+          - name: keyword.operator.idris
+            match: |
+                (?x)
+                (?!(?:::|=>|->|<-|=|\?=|\|)[^-:!#$%&*+./<=>?@\\^|~])
+                [-:!#$%&*+./<=>?@\\^|~]+
+          - name: support.type.idris
+            match: \bType\b
+          - name: support.type.idris
+            match: |
+                (?x)
+                (?:
+                    \([-:!#$%&*+./<=>?@\\^|~]+\)
+                  | \b(?!l(?:et|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                     |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                     |abstract|implicit|quoteGoal)\b)[A-Z][a-zA-Z0-9_'.]*
+                ) # identifierPatternUpper
+          - match: |
+                (?x)
+                (?:
+                    \([-:!#$%&*+./<=>?@\\^|~]+\)
+                  | \b(?!l(?:et|in|data|codata|record|Type|if|then|else|do|dsl|import|impossible|case|of|total|partial|mutual|infix|infixl|infixr
+                     |where|with|syntax|proof|postulate|using|namespace|class|instance|parameters|public|private
+                     |abstract|implicit|quoteGoal)\b)[a-zA-Z][a-zA-Z0-9_'.]*
+                ) # identifierPattern
